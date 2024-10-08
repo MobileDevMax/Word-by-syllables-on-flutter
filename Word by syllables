@@ -1,0 +1,118 @@
+import 'package:flutter/material.dart';
+import 'dart:math';
+
+void main() {
+  runApp(MyApp());
+}
+
+class MyApp extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'Word by Syllables',
+      theme: ThemeData(
+        primarySwatch: Colors.blue,
+      ),
+      home: WordGame(),
+    );
+  }
+}
+
+class WordGame extends StatefulWidget {
+  @override
+  _WordGameState createState() => _WordGameState();
+}
+
+class _WordGameState extends State<WordGame> {
+  final List<String> words = ['cat', 'dog', 'car', 'phone', 'computer'];
+  late String currentWord;
+  late List<String> syllables;
+  late List<String> shuffledSyllables;
+  final TextEditingController _controller = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    _generateNewWord();
+  }
+
+  void _generateNewWord() {
+    currentWord = words[Random().nextInt(words.length)];
+    syllables = _splitIntoSyllables(currentWord);
+    shuffledSyllables = List.from(syllables)..shuffle();
+    _controller.clear();  
+    setState(() {});
+  }
+
+  List<String> _splitIntoSyllables(String word) {
+    return RegExp(r'(?<=[aeiou])(?=[^aeiou])').allMatches(word)
+        .map((match) => word.substring(0, match.start))
+        .toList()
+      ..add(word.substring(RegExp(r'(?<=[aeiou])(?=[^aeiou])').firstMatch(word)!.start));
+  }
+
+  void _checkAnswer() {
+    if (_controller.text.replaceAll(' ', '') == currentWord) {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text('Correct!')));
+      _generateNewWord(); 
+    } else {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text('Try again!')));
+    }
+  }
+
+  void _addSyllable(String syllable) {
+    setState(() {
+      _controller.text += syllable + ' '; 
+      _controller.selection = TextSelection.fromPosition(TextPosition(offset: _controller.text.length));  
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('Word by Syllables'),
+      ),
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              'Assemble the syllables into a word:',
+              style: TextStyle(fontSize: 20),
+            ),
+            SizedBox(height: 20),
+            Wrap(
+              spacing: 8.0, 
+              children: shuffledSyllables
+                  .map((syllable) => ElevatedButton(
+                        onPressed: () => _addSyllable(syllable),
+                        child: Text(syllable),
+                      ))
+                  .toList(),
+            ),
+            SizedBox(height: 20),
+            TextField(
+              controller: _controller,
+              decoration: InputDecoration(
+                labelText: 'Your answer',
+              ),
+              onSubmitted: (value) {
+                _checkAnswer();
+              },
+            ),
+            SizedBox(height: 20),
+            ElevatedButton(
+              onPressed: _checkAnswer,
+              child: Text('Check'),
+            ),
+            SizedBox(height: 20),
+          ],
+        ),
+      ),
+    );
+  }
+}
